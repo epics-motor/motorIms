@@ -312,7 +312,7 @@ asynStatus ImsMDrivePlusMotorAxis::home(double minVelocity, double maxVelocity, 
 	}
 
 	// sent commands to motor to set velocities and acceleration
-	if (status = setAxisMoveParameters(minVelocity, maxVelocity, acceleration)) goto bail;
+	if ((status = setAxisMoveParameters(minVelocity, maxVelocity, acceleration)) != 0) goto bail;
 
 	// home
 	if (forwards == 1) { // homing in forward direction
@@ -381,7 +381,7 @@ asynStatus ImsMDrivePlusMotorAxis::poll(bool *moving)
 	char resp[MAX_BUFF_LEN];
 	size_t nread;
 	int val=0;
-	double position;
+	double position = 0.0;
 	*moving = false;
 	static const char *functionName = "poll()";
 	//epicsTime currentTime;

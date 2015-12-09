@@ -127,7 +127,7 @@ struct driver_table IM483SM_access =
     NULL
 };
 
-struct
+struct drvIM483SM
 {
     long number;
     long (*report) (int);
@@ -225,7 +225,7 @@ static int set_status(int card, int signal)
 {
     struct IM483controller *cntrl;
     struct mess_node *nodeptr;
-    register struct mess_info *motor_info;
+    struct mess_info *motor_info;
     /* Message parsing variables */
     char buff[BUFF_SIZE];
     int rtnval, rtn_state;
@@ -376,7 +376,7 @@ exit:
 static RTN_STATUS send_mess(int card, const char *com, const char *name)
 {
     struct IM483controller *cntrl;
-    int size;
+    size_t size;
     size_t nwrite;
 
     size = strlen(com);
@@ -439,7 +439,7 @@ static int recv_mess(int card, char *com, int flag)
     }
 
     Debug(2, "recv_mess(): message = \"%s\"\n", com);
-    return(nread);
+    return((int)nread);
 }
 
 
@@ -543,8 +543,8 @@ static int motor_init()
             int itera, retry = 0;
             char *src, *dest;
 
-            pasynOctetSyncIO->setOutputEos(cntrl->pasynUser, output_terminator, strlen(output_terminator));
-            pasynOctetSyncIO->setInputEos(cntrl->pasynUser, input_terminator, strlen(input_terminator));
+            pasynOctetSyncIO->setOutputEos(cntrl->pasynUser, output_terminator, (int)strlen(output_terminator));
+            pasynOctetSyncIO->setInputEos(cntrl->pasynUser, input_terminator, (int)strlen(input_terminator));
             do
             {
                 /* Send a message to the board, see if it exists */

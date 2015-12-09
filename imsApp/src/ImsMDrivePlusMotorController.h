@@ -46,7 +46,7 @@ protected:
 	int ImsMDrivePlusSaveToNVM_;    //! Store current user variables and flags to nonvolatile ram
 #define FIRST_IMS_PARAM ImsMDrivePlusLoadMCode_
 #define LAST_IMS_PARAM ImsMDrivePlusSaveToNVM_
-#define NUM_IMS_PARAMS (&LAST_IMS_PARAM - &FIRST_IMS_PARAM + 1)
+#define NUM_IMS_PARAMS ((int)(&LAST_IMS_PARAM - &FIRST_IMS_PARAM + 1))
 
 private:
 // drvInfo strings for extra parameters that the ImsMDrivePlus controller supports

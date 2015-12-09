@@ -58,7 +58,6 @@ ImsMDrivePlusMotorController::ImsMDrivePlusMotorController(const char *motorPort
 {
 	static const char *functionName = "ImsMDrivePlusMotorController()";
 	asynStatus status;
-	ImsMDrivePlusMotorAxis *pAxis;
 	// asynMotorController constructor calloc's memory for array of axis pointers
 	pAxes_ = (ImsMDrivePlusMotorAxis **)(asynMotorController::pAxes_);
 
@@ -91,8 +90,7 @@ ImsMDrivePlusMotorController::ImsMDrivePlusMotorController(const char *motorPort
 
 	// Create axis
 	// Assuming single axis per controller the way drvAsynIPPortConfigure( "M06", "ts-b34-nw08:2101", 0, 0 0 ) is called in st.cmd script
-	pAxis = new ImsMDrivePlusMotorAxis(this, 0);
-	pAxis = NULL;  // asynMotorController constructor tracking array of axis pointers
+	new ImsMDrivePlusMotorAxis(this, 0);
 
 	// read home and limit config from S1-S4
 	readHomeAndLimitConfig();
@@ -219,7 +217,7 @@ asynStatus ImsMDrivePlusMotorController::writeInt32(asynUser *pasynUser, epicsIn
 	pAxis = this->getAxis(pasynUser);
 	if (!pAxis) return asynError;
 
-	asynPrint(pasynUserSelf, ASYN_TRACEIO_DRIVER, "%s:%s: function=%s, val=%d\n", DRIVER_NAME, functionName, value);
+	asynPrint(pasynUserSelf, ASYN_TRACEIO_DRIVER, "%s:%s: val=%d\n", DRIVER_NAME, functionName, value);
 
 	// Set the parameter and readback in the parameter library.  This may be overwritten when we read back the
 	// status at the end, but that's OK
@@ -318,9 +316,7 @@ asynStatus ImsMDrivePlusMotorController::writeReadController(const char *output,
 ////////////////////////////////////////////////////////
 extern "C" int ImsMDrivePlusCreateController(const char *motorPortName, const char *IOPortName, char *devName, double movingPollPeriod, double idlePollPeriod)
 {
-	ImsMDrivePlusMotorController *pImsController;
-	pImsController = new ImsMDrivePlusMotorController(motorPortName, IOPortName, devName, movingPollPeriod/1000., idlePollPeriod/1000.);
-	pImsController = NULL; 
+	new ImsMDrivePlusMotorController(motorPortName, IOPortName, devName, movingPollPeriod/1000., idlePollPeriod/1000.);
 	return(asynSuccess);
 }
 
