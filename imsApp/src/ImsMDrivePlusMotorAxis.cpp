@@ -11,13 +11,16 @@
 //  ----------------
 //  11-21-2011  NF Initial version
 //  12-15-2014 RLS Bug fix from Thierry Zamofing (PSI); acceleration was set to the same value as the speed.
+//  10-12-2015 Bug fix from Tadej Humar (PSI): JOGR didn't work since maxVelocity was negative (now using fabs(maxVelocity) when jogging)
 
+#include <math.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 #include <exception>
+
 #include <epicsThread.h>
 #include <iocsh.h>
 #include <asynOctetSyncIO.h>
@@ -212,7 +215,7 @@ asynStatus ImsMDrivePlusMotorAxis::moveVelocity(double minVelocity, double maxVe
 	static const char *functionName = "moveVelocity()";
 
 	// sent commands to motor to set velocities and acceleration
-	status = setAxisMoveParameters(minVelocity, maxVelocity, acceleration);
+	status = setAxisMoveParameters(minVelocity, fabs(maxVelocity), acceleration); // maxVelocity will be negative if JOGR is executed. Still fail if Jog velocity is less than min velocity.
 	if (status) goto bail;
 
 	// move
