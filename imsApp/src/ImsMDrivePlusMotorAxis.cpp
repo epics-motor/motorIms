@@ -12,6 +12,7 @@
 //  11-21-2011  NF Initial version
 //  12-15-2014 RLS Bug fix from Thierry Zamofing (PSI); acceleration was set to the same value as the speed.
 //  10-12-2015 Bug fix from Tadej Humar (PSI): JOGR didn't work since maxVelocity was negative (now using fabs(maxVelocity) when jogging)
+//  08-09-2016 handleAxisError fixed by DirkZimoch (PSI): Don't print "ERROR polling motor, 0:'No Error'" constantly when the device is offline
 
 #include <math.h>
 #include <stddef.h>
@@ -518,6 +519,7 @@ asynStatus ImsMDrivePlusMotorAxis::saveToNVM()
 ////////////////////////////////////////////////////////
 void ImsMDrivePlusMotorAxis::handleAxisError(char *errMsg)
 {
+	asynStatus status;
 	char cmd[MAX_CMD_LEN];
 	char resp[MAX_BUFF_LEN];
 	size_t nread=0;
@@ -530,7 +532,8 @@ void ImsMDrivePlusMotorAxis::handleAxisError(char *errMsg)
 
 	// read error code
 	sprintf(cmd, "PR ER");
-	pController->writeReadController(cmd, resp, sizeof(resp), &nread, IMS_TIMEOUT);
+	status = pController->writeReadController(cmd, resp, sizeof(resp), &nread, IMS_TIMEOUT);
+	if (status != asynSuccess) return; // controller unreachable but don't fill log with error messages
 	errCode = atoi(resp);
 
 	switch (errCode) {
