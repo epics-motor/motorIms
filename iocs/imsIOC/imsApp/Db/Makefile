@@ -12,6 +12,12 @@ include $(TOP)/configure/CONFIG
 # databases, templates, substitutions like this
 #DB += xxx.db
 
+ifdef MOTOR_IMS
+DB_INSTALLS += $(MOTOR_IMS)/db/IMS_extra.db
+else
+DB_INSTALLS += $(MOTOR)/db/IMS_extra.db
+endif
+
 #----------------------------------------------------
 # If <anyname>.db template is not named <anyname>*.template add
 # <anyname>_template = <templatename>
