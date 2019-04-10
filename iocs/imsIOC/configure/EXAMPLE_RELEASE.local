@@ -1,0 +1,6 @@
+# Use the following lines if motorIms was built inside motor
+MOTOR=
+-include $(MOTOR)/configure/RELEASE
+# Use the following lines if motorIms was built outside motor
+#!MOTOR_IMS=
+#!-include $(MOTOR_IMS)/configure/RELEASE.local
