@@ -21,12 +21,13 @@ ims_DBD += base.dbd
 # Include dbd files from all support applications:
 #ifdef ASYN
 ims_DBD += asyn.dbd
+ims_DBD += drvAsynIPPort.dbd
 #endif
 ims_DBD += motorSupport.dbd
-ims_DBD += devIms.dbd
+ims_DBD += devImsMotor.dbd
 
 # Add all the support libraries needed by this IOC
-ims_LIBS += ims
+ims_LIBS += Ims
 ims_LIBS += motor
 #ifdef ASYN
 ims_LIBS += asyn
