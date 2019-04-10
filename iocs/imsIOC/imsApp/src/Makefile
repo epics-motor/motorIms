@@ -21,6 +21,7 @@ ims_DBD += base.dbd
 # Include dbd files from all support applications:
 #ifdef ASYN
 ims_DBD += asyn.dbd
+ims_DBD += drvAsynSerialPort.dbd
 ims_DBD += drvAsynIPPort.dbd
 #endif
 ims_DBD += motorSupport.dbd

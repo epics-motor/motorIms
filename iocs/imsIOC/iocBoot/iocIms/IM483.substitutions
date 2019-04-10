@@ -1,0 +1,7 @@
+file "$(MOTOR)/db/motor.db"
+{
+pattern
+{P,         N,      M,      DTYP,     C,  S,  DESC,          EGU,      DIR,  VELO,  VBAS,  ACCL,  BDST,  BVEL,  BACC,  MRES,  PREC,  DHLM,  DLLM,  INIT}
+{ims:,    1,  "m$(N)",  "IM483SM",  0,  0,  "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
+#{ims:,    2,  "m$(N)",  "IM483PL",  1,  0,  "motor $(N)",  degrees,  Pos,  1,     .1,    .2,    0,     1,     .2,    0.01,  5,     100,   -100,  ""}
+}

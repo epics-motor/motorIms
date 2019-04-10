@@ -28,7 +28,7 @@ pattern
 {IMS:, 1, 1, "asynMotor",  IMS1, "MDrive23", 0,    mm,  Pos,  3.0,  0.017, 2.0,  0,    0.017, 2.0,  100,  -100, 0.000083, 4,    ""}
 }
 
-file "$(MOTOR)/db/IMS_extra.db"
+file "$(TOP)/db/IMS_extra.db"
 {
 pattern
 {DEV, AREA, LOC, PORT, ADDR, TIMEOUT}

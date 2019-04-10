@@ -1,8 +1,5 @@
 #!../../bin/linux-x86_64/ims
 
-## You may have to change ims to something else
-## everywhere it appears in this file
-
 < envPaths
 
 cd "${TOP}"
@@ -11,11 +8,18 @@ cd "${TOP}"
 dbLoadDatabase "dbd/ims.dbd"
 ims_registerRecordDeviceDriver pdbbase
 
-## Load record instances
-#dbLoadRecords("db/xxx.db","user=kpetersn")
-
 cd "${TOP}/iocBoot/${IOC}"
+
+## motorUtil (allstop & alldone)
+dbLoadRecords("$(MOTOR)/db/motorUtil.db", "P=ims:")
+
+##
+< IM483.cmd
+< MDrive.cmd
+
 iocInit
 
-## Start any sequence programs
-#seq sncxxx,"user=kpetersn"
+## motorUtil (allstop & alldone)
+motorUtilInit("ims:")
+
+# Boot complete
