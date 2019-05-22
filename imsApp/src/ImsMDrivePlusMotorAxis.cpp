@@ -13,6 +13,7 @@
 //  12-15-2014 RLS Bug fix from Thierry Zamofing (PSI); acceleration was set to the same value as the speed.
 //  10-12-2015 Bug fix from Tadej Humar (PSI): JOGR didn't work since maxVelocity was negative (now using fabs(maxVelocity) when jogging)
 //  08-09-2016 handleAxisError fixed by DirkZimoch (PSI): Don't print "ERROR polling motor, 0:'No Error'" constantly when the device is offline
+//  08-05-2019 Tadej Humar (PSI): Deceleration is set in stop and setAxisMoveParameters, R1 register is used as a isHomed flag, C2 register is exposed as encoder position
 
 #include <math.h>
 #include <stddef.h>
@@ -139,9 +140,12 @@ asynStatus ImsMDrivePlusMotorAxis::setAxisMoveParameters(double minVelocity, dou
 	status = pController->writeController(cmd, IMS_TIMEOUT);
 	if (status) goto bail;
 
-	// set accceleration
+	// set acceleration and deceleration
 	if (acceleration != 0) {
 		sprintf(cmd, "A=%ld", (long)acceleration);
+		status = pController->writeController(cmd, IMS_TIMEOUT);
+		if (status) goto bail;
+		sprintf(cmd, "D=%ld", (long)acceleration);
 		status = pController->writeController(cmd, IMS_TIMEOUT);
 		if (status) goto bail;
 	}
@@ -251,7 +255,7 @@ asynStatus ImsMDrivePlusMotorAxis::stop(double acceleration)
 
 	// set accceleration
 	if (acceleration != 0) {
-		sprintf(cmd, "A=%ld", (long)acceleration);
+		sprintf(cmd, "D=%ld", (long)acceleration);
 		status = pController->writeController(cmd, IMS_TIMEOUT);
 		if (status) goto bail;
 	}
@@ -319,10 +323,17 @@ asynStatus ImsMDrivePlusMotorAxis::home(double minVelocity, double maxVelocity, 
 	if (forwards == 1) { // homing in forward direction
 		direction = 3;
 	}
+
+	// Start home procedure
 	asynPrint(pController->pasynUserSelf, ASYN_TRACEIO_DRIVER, "%s:%s: VBASE=%f, VELO=%f, ACCL=%f, forwards=%d\n", DRIVER_NAME, functionName, minVelocity, maxVelocity, acceleration, forwards);
 	sprintf(cmd, "HM %d", direction);
 	status  = pController->writeController(cmd, IMS_TIMEOUT);
 	if (status) goto bail;
+
+	// Reset isHomed flag
+	sprintf(cmd, "R1=0");
+	status  = pController->writeController(cmd, IMS_TIMEOUT);
+	if(status) goto bail;
 
 	bail:
 	if (status) {
@@ -331,6 +342,7 @@ asynStatus ImsMDrivePlusMotorAxis::home(double minVelocity, double maxVelocity, 
 		handleAxisError(buff);
 	}
 
+	homing = true;
 	callParamCallbacks();
 	return status;
 }
@@ -385,7 +397,6 @@ asynStatus ImsMDrivePlusMotorAxis::poll(bool *moving)
 	double position = 0.0;
 	*moving = false;
 	static const char *functionName = "poll()";
-	//epicsTime currentTime;
 
 	// get position
 	sprintf(cmd, "PR P");
@@ -401,34 +412,14 @@ asynStatus ImsMDrivePlusMotorAxis::poll(bool *moving)
 	status = pController->writeReadController(cmd, resp, sizeof(resp), &nread, IMS_TIMEOUT);
 	if (status) goto bail;
 	val = atoi(resp);
-	if (val == 1) *moving = true;  	// updating moving flag
-/*	else { // not moving
-		if (prevMovingState == 1) {// state changed, moving before, start idle timer
-			idleTimeStart = epicsTime::getCurrent();
-		}
+	*moving = val;
+	setIntegerParam(pController->motorStatusDone_, val == 0);
+	if(homing && (!val)) {
+		sprintf(cmd, "R1=1");
+		homing = false;
+		status  = pController->writeController(cmd, IMS_TIMEOUT);
+		if(status) goto bail;
 	}
-	prevMovingState = val;
-*/
-	// update motor record status done with moving status
-	setIntegerParam(pController->motorStatusDone_, ! *moving );
-
-/*
-	// if position has changed and moving stopped for over 30sec, update NVM with current position so the motor will remember
-	// its location just in case its power dies
-	currentTime = epicsTime::getCurrent();
-	idleTime = currentTime - idleTimeStart;
-	//printf("prevPos=%f, pos=%f, moving=%d, idleTime=%f\n", prevPosition, position, *moving, idleTime);
-	if (prevPosition != position && *moving == false && idleTime > 30) {
-		sprintf(cmd, "S");
-		if (status = pController->writeController(cmd, IMS_TIMEOUT)) {
-			asynPrint(pController->pasynUserSelf, ASYN_TRACEIO_DRIVER, "%s:poll(): ERROR saving position to NVM\n", DRIVER_NAME);
-			goto bail;
-		}
-		asynPrint(pController->pasynUserSelf, ASYN_TRACEIO_DRIVER, "%s:poll(): saving parameters to NVM\n", DRIVER_NAME);
-		idleTimeStart = epicsTime::getCurrent();
-		prevPosition = position;
-	}
-*/
 
 	// get home switch value
 	if (pController->homeSwitchInput != -1) {
@@ -457,6 +448,20 @@ asynStatus ImsMDrivePlusMotorAxis::poll(bool *moving)
 		setIntegerParam(pController->motorStatusLowLimit_, val);
 	}
 
+	// Read isHomed status
+	sprintf(cmd, "PR R1");
+	status = pController->writeReadController(cmd, resp, sizeof(resp), &nread, IMS_TIMEOUT);
+	if (status) goto bail;
+	val = atoi(resp);
+	setIntegerParam(pController->motorStatusHomed_, val > 0);
+
+	// Read encoder counts
+	sprintf(cmd, "PR C2");
+	status = pController->writeReadController(cmd, resp, sizeof(resp), &nread, IMS_TIMEOUT);
+	if (status) goto bail;
+	val = atoi(resp);
+	setDoubleParam(pController->motorEncoderPosition_, val);
+
 	// error polling
 	bail:
 	if (status) {
@@ -479,7 +484,6 @@ asynStatus ImsMDrivePlusMotorAxis::poll(bool *moving)
 	asynPrint(pController->pasynUserSelf, ASYN_TRACEIO_DRIVER, "%s:%s: POS=%f, MSTAT=%d\n", DRIVER_NAME, functionName, position, mstat);
 
 	return status;
-
 }
 
 ////////////////////////////////////////////////////////
@@ -506,7 +510,6 @@ asynStatus ImsMDrivePlusMotorAxis::saveToNVM()
 		handleAxisError(buff);
 	}
 
-	callParamCallbacks(); //FIXME is this necessary??
 	return status;
 }
 
