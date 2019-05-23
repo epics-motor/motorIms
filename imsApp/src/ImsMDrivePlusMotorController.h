@@ -48,6 +48,8 @@ protected:
 #define LAST_IMS_PARAM ImsMDrivePlusSaveToNVM_
 #define NUM_IMS_PARAMS ((int)(&LAST_IMS_PARAM - &FIRST_IMS_PARAM + 1))
 
+	void set_switch_vars(int type, int setto);
+
 private:
 // drvInfo strings for extra parameters that the ImsMDrivePlus controller supports
 #define ImsMDrivePlusLoadMCodeControlString	"IMS_LOADMCODE"    // NOT SUPPORTED YET
