@@ -1,5 +1,20 @@
 # motorIms Releases
 
+## __R1-0-1 (2020-05-11)__
+R1-0-1 is a release based on the master branch.  
+
+### Changes since R1-0
+
+#### New features
+* None
+
+#### Modifications to existing features
+* None
+
+#### Bug fixes
+* Commit [95ead31](https://github.com/epics-motor/motorIms/commit/95ead31379acbd03e729eb5124a278f292e7395c): Include ``$(MOTOR)/modules/RELEASE.$(EPICS_HOST_ARCH).local`` instead of ``$(MOTOR)/configure/RELEASE``
+* Commit [10c502c](https://github.com/epics-motor/motorIms/commit/10c502c8dc118591f63cc4c9cdc41127883ff1f5): Eliminated compiler warnings
+
 ## __R1-0 (2019-04-18)__
 R1-0 is a release based on the master branch.  
 
