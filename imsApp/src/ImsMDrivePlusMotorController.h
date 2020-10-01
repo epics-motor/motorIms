@@ -64,7 +64,7 @@ private:
 	int negLimitSwitchInput;
 
 	void initController(const char *devName, double movingPollPeriod, double idlePollPeriod);
-	int readHomeAndLimitConfig();  // read home, positive limit, and neg limit switch configuration from controller (S1-S4 settings)
+	int readHomeAndLimitConfig();  // read home, positive limit, and neg limit switch configuration from controller (S1-S4 or IS [Lexium] settings)
 
 	friend class ImsMDrivePlusMotorAxis;
 };

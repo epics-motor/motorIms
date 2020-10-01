@@ -150,8 +150,8 @@ void ImsMDrivePlusMotorController::set_switch_vars(int type, int setto)
 
 ////////////////////////////////////////
 //! readHomeAndLimitConfig
-//! read home, positive limit, and neg limit switch configuration from MCode S1-S4 settings
-//! S1-S4 must be set up beforehand
+//! read home, positive limit, and neg limit switch configuration from MCode S1-S4 settings or Lexium IS
+//! S1-S4 or IS must be set up beforehand
 //! I1-I4 are used to read the status of S1-S4
 //  Use logic from existing drvMDrive.cc
 ////////////////////////////////////////
@@ -166,7 +166,7 @@ int ImsMDrivePlusMotorController::readHomeAndLimitConfig()
 	resp[0] = 0;
 	sprintf(cmd, "PR VR"); // get version
 	// ignoring status of writeReadController here, since old MForce 1
-	// responds with error for some reason, whereas MForce 2 / LMM responds correctly.
+	// responds with error for some reason, whereas MForce 2 / LMM / LMD responds correctly.
 	this->writeReadController(cmd, resp, sizeof(resp), &nread, IMS_TIMEOUT);
 
 	if (strlen(resp) > 0)
@@ -174,11 +174,11 @@ int ImsMDrivePlusMotorController::readHomeAndLimitConfig()
 
 	printf( "Setup config:\n" );
 
-	if (strstr(resp, "lmm") || strstr(resp, "LMM"))
+	if (strstr(resp, "lmm") || strstr(resp, "LMM") || strstr(resp, "lmd") || strstr(resp, "LMD"))
 	{
 		//----------------------------------------------
-		// LMM controller
-		printf("LMM driver detected\n" );
+		// LMM controller or LMD motor
+		printf("Lexium series driver detected\n");
 		printf("-------------------------------------------\n");
 
 		char eos[2] = { 0x0, 0x0 };
