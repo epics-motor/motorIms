@@ -14,6 +14,7 @@
 //  10-12-2015 Bug fix from Tadej Humar (PSI): JOGR didn't work since maxVelocity was negative (now using fabs(maxVelocity) when jogging)
 //  08-09-2016 handleAxisError fixed by DirkZimoch (PSI): Don't print "ERROR polling motor, 0:'No Error'" constantly when the device is offline
 //  08-05-2019 Tadej Humar (PSI): Deceleration is set in stop and setAxisMoveParameters, R1 register is used as a isHomed flag, C2 register is exposed as encoder position
+//  03-23-2021 Tadej Humar (PSI): Reset of ST flag on all motion commands and mapped ST readback in poll to motor stalled status bit
 
 #include <math.h>
 #include <stddef.h>
@@ -149,6 +150,11 @@ asynStatus ImsMDrivePlusMotorAxis::setAxisMoveParameters(double minVelocity, dou
 		status = pController->writeController(cmd, IMS_TIMEOUT);
 		if (status) goto bail;
 	}
+
+	// reset stall flag
+	sprintf(cmd, "ST=0");
+	status = pController->writeController(cmd, IMS_TIMEOUT);
+	if (status) goto bail;
 
 	bail:
 	if (status) {
@@ -454,6 +460,14 @@ asynStatus ImsMDrivePlusMotorAxis::poll(bool *moving)
 	if (status) goto bail;
 	val = atoi(resp);
 	setIntegerParam(pController->motorStatusHomed_, val > 0);
+
+	// Read stall flag
+	sprintf(cmd, "PR ST");
+	status = pController->writeReadController(cmd, resp, sizeof(resp), &nread, IMS_TIMEOUT);
+	if (status) goto bail;
+	val = atoi(resp);
+	setIntegerParam(pController->motorStatusFollowingError_, val > 0);
+	setIntegerParam(pController->motorStatusSlip_, val > 0);
 
 	// Read encoder counts
 	sprintf(cmd, "PR C2");
