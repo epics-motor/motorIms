@@ -174,42 +174,21 @@ int ImsMDrivePlusMotorController::readHomeAndLimitConfig()
 
 	printf( "Setup config:\n" );
 
-	if (strstr(resp, "lmm") || strstr(resp, "LMM") || strstr(resp, "lmd") || strstr(resp, "LMD"))
+	if (strstr(resp, "lmm") || strstr(resp, "LMM"))
 	{
-		//----------------------------------------------
-		// LMM controller or LMD motor
-		printf("Lexium series driver detected\n");
+		// LMM controller
+		printf("Lexium Motor Module detected\n" );
 		printf("-------------------------------------------\n");
-
-		char eos[2] = { 0x0, 0x0 };
-		pasynOctetSyncIO->setInputEos(pAsynUserIMS, eos, 1);
-		sprintf(cmd, "PR IS");
-		resp[0] = 0;
-		status = this->writeReadController(cmd, resp, sizeof(resp), &nread, IMS_TIMEOUT);
-		printf("%s\n", resp);
-		eos[0] = 0xa;
-		pasynOctetSyncIO->setInputEos(pAsynUserIMS, eos, 1);
-		char *start = resp;
-		int inputno, fn, act;
-		// quick and dirty solution:
-		// kill all nondigit chars, break into separate strings on LF, scan 3 params
-		if (nread > 0)
-			for (size_t i = 0; i < nread; i++)
-				if (!isdigit(resp[i])) {
-					if (resp[i] == 0x0a) {
-						resp[i] = 0;
-						sscanf(start, "%d %d %d", &inputno, &fn, &act);
-						//printf("got %d %d %d\n", inputno, fn, act);
-						set_switch_vars(fn, inputno);
-						start = resp + i + 1;
-					}
-					else
-						resp[i] = 0x20;
-				}
+	}
+	else if (strstr(resp, "lmd") || strstr(resp, "LMD"))
+	{
+		// LMD motor - different terminating characters
+		printf("Lexium MDrive detected\n");
+		printf("-------------------------------------------\n");
+		pasynOctetSyncIO->setOutputEos(pAsynUserIMS, "\r", 1);
 	}
 	else
 	{
-		//----------------------------------------------
 		// MForce 1 (IMS) controller
 		printf("MForce 1 driver detected\n");
 		printf("-------------------------------------------\n");
@@ -222,8 +201,36 @@ int ImsMDrivePlusMotorController::readHomeAndLimitConfig()
 			sscanf(resp, "%4d[^,]", &type);
 			set_switch_vars(type, i);
 		}
+		goto end;
 	}
 
+	// Any Lexium from here on
+	pasynOctetSyncIO->setInputEos(pAsynUserIMS, "\0", 1);
+	sprintf(cmd, "PR IS");
+	resp[0] = 0;
+	status = this->writeReadController(cmd, resp, sizeof(resp), &nread, IMS_TIMEOUT);
+	printf("%s\n", resp);
+	pasynOctetSyncIO->setInputEos(pAsynUserIMS, "\n", 1);
+	// quick and dirty solution:
+	// kill all nondigit chars, break into separate strings on LF, scan 3 params
+	if (nread > 0) {
+		char *start = resp;
+		for (size_t i = 0; i < nread; i++)
+			if (!isdigit(resp[i])) {
+				if (resp[i] == '\n') {
+					int inputno, fn, act;
+					resp[i] = 0;
+					sscanf(start, "%d %d %d", &inputno, &fn, &act);
+					//printf("got %d %d %d\n", inputno, fn, act);
+					set_switch_vars(fn, inputno);
+					start = resp + i + 1;
+				}
+				else
+					resp[i] = ' ';
+			}
+	}
+
+end:
 	printf( "    HOME limit switch input line: %d\n", homeSwitchInput );
 	printf( "POSITIVE limit switch input line: %d\n", posLimitSwitchInput );
 	printf( "NEGATIVE limit switch input line: %d\n", negLimitSwitchInput );
