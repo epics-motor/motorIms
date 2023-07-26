@@ -46,7 +46,9 @@ protected:
 	int ImsMDrivePlusSaveToNVM_;    //! Store current user variables and flags to nonvolatile ram
 #define FIRST_IMS_PARAM ImsMDrivePlusLoadMCode_
 #define LAST_IMS_PARAM ImsMDrivePlusSaveToNVM_
-#define NUM_IMS_PARAMS (&LAST_IMS_PARAM - &FIRST_IMS_PARAM + 1)
+#define NUM_IMS_PARAMS ((int)(&LAST_IMS_PARAM - &FIRST_IMS_PARAM + 1))
+
+	void set_switch_vars(int type, int setto);
 
 private:
 // drvInfo strings for extra parameters that the ImsMDrivePlus controller supports
@@ -62,7 +64,7 @@ private:
 	int negLimitSwitchInput;
 
 	void initController(const char *devName, double movingPollPeriod, double idlePollPeriod);
-	int readHomeAndLimitConfig();  // read home, positive limit, and neg limit switch configuration from controller (S1-S4 settings)
+	int readHomeAndLimitConfig();  // read home, positive limit, and neg limit switch configuration from controller (S1-S4 or IS [Lexium] settings)
 
 	friend class ImsMDrivePlusMotorAxis;
 };

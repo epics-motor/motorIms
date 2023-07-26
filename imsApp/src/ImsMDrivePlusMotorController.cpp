@@ -58,7 +58,6 @@ ImsMDrivePlusMotorController::ImsMDrivePlusMotorController(const char *motorPort
 {
 	static const char *functionName = "ImsMDrivePlusMotorController()";
 	asynStatus status;
-	ImsMDrivePlusMotorAxis *pAxis;
 	// asynMotorController constructor calloc's memory for array of axis pointers
 	pAxes_ = (ImsMDrivePlusMotorAxis **)(asynMotorController::pAxes_);
 
@@ -91,8 +90,7 @@ ImsMDrivePlusMotorController::ImsMDrivePlusMotorController(const char *motorPort
 
 	// Create axis
 	// Assuming single axis per controller the way drvAsynIPPortConfigure( "M06", "ts-b34-nw08:2101", 0, 0 0 ) is called in st.cmd script
-	pAxis = new ImsMDrivePlusMotorAxis(this, 0);
-	pAxis = NULL;  // asynMotorController constructor tracking array of axis pointers
+	new ImsMDrivePlusMotorAxis(this, 0);
 
 	// read home and limit config from S1-S4
 	readHomeAndLimitConfig();
@@ -127,10 +125,33 @@ void ImsMDrivePlusMotorController::initController(const char *devName, double mo
 	pasynOctetSyncIO->flush(pAsynUserIMS);
 }
 
+void ImsMDrivePlusMotorController::set_switch_vars(int type, int setto)
+{
+	switch (type) {
+	case 0: // general purpose input
+		break;
+	case 1: // home switch input
+		homeSwitchInput = setto;
+		printf( "Setup type %d found: HOME limit switch input line is set to %d\n", type, homeSwitchInput );
+		break;
+	case 2: // positive limit switch input
+		posLimitSwitchInput = setto;
+		printf( "Setup type %d found: POSITIVE limit switch input line is set to %d\n", type, posLimitSwitchInput );
+		break;
+	case 3: // negative limit switch input
+		negLimitSwitchInput = setto;
+		printf( "Setup type %d found: NEGATIVE limit switch input line is set to %d\n", type, negLimitSwitchInput );
+		break;
+	default:
+		break;
+	}
+}
+
+
 ////////////////////////////////////////
 //! readHomeAndLimitConfig
-//! read home, positive limit, and neg limit switch configuration from MCode S1-S4 settings
-//! S1-S4 must be set up beforehand
+//! read home, positive limit, and neg limit switch configuration from MCode S1-S4 settings or Lexium IS
+//! S1-S4 or IS must be set up beforehand
 //! I1-I4 are used to read the status of S1-S4
 //  Use logic from existing drvMDrive.cc
 ////////////////////////////////////////
@@ -138,33 +159,82 @@ int ImsMDrivePlusMotorController::readHomeAndLimitConfig()
 {
 	asynStatus status = asynError;
 	char cmd[MAX_CMD_LEN];
-	char resp[MAX_BUFF_LEN];
+	char resp[1024];
 	size_t nread;
-	static const char *functionName = "readHomeAndLimitConfig()";
 	int type;
 
-	// iterate through S1-S4 and parse each configuration to see if home, pos, and neg limits are set
-	for (int i=1; i<=4; i++) {
-		sprintf(cmd, "PR S%d", i); // query S1-S4 setting
-		status = this->writeReadController(cmd, resp, sizeof(resp), &nread, IMS_TIMEOUT);
-		sscanf(resp, "%d", &type);
-		//asynPrint(pasynUserSelf, ASYN_TRACEIO_DRIVER, "%s:%s: S%d: type=%d\n", DRIVER_NAME, functionName, i, type);
-		if (type != 0)
-			//printf("%s:%s: S%d: type=%d\n", DRIVER_NAME, functionName, i, type);
-		switch (type) {
-		case 0: break; // general purpose input
-		case 1: // home switch input
-			homeSwitchInput = i; break;
-		case 2: // positive limit switch input
-			posLimitSwitchInput = i; break;
-		case 3: // negative limit switch input
-			negLimitSwitchInput = i; break;
-		default:
-			printf("%s:%s: ERROR invalid data type for S%d=%d\n", DRIVER_NAME, functionName, i, type);
+	resp[0] = 0;
+	sprintf(cmd, "PR VR"); // get version
+	// ignoring status of writeReadController here, since old MForce 1
+	// responds with error for some reason, whereas MForce 2 / LMM / LMD responds correctly.
+	this->writeReadController(cmd, resp, sizeof(resp), &nread, IMS_TIMEOUT);
+
+	if (strlen(resp) > 0)
+		printf("Controller version %s\n", resp);
+
+	printf( "Setup config:\n" );
+
+	if (strstr(resp, "lmm") || strstr(resp, "LMM"))
+	{
+		// LMM controller
+		printf("Lexium Motor Module detected\n" );
+		printf("-------------------------------------------\n");
+	}
+	else if (strstr(resp, "lmd") || strstr(resp, "LMD"))
+	{
+		// LMD motor - different terminating characters
+		printf("Lexium MDrive detected\n");
+		printf("-------------------------------------------\n");
+		pasynOctetSyncIO->setOutputEos(pAsynUserIMS, "\r", 1);
+	}
+	else
+	{
+		// MForce 1 (IMS) controller
+		printf("MForce 1 driver detected\n");
+		printf("-------------------------------------------\n");
+		printf("Checking setup for home, pos and neg limit switches:\n");
+		// iterate through S1-S4 and parse each configuration to see if home, pos, and neg limits are set
+		for (int i=1; i<=4; i++) {
+			sprintf(cmd, "PR S%d", i); // query S1-S4 setting
+			status = this->writeReadController(cmd, resp, sizeof(resp), &nread, IMS_TIMEOUT);
+			printf("%s\n", resp);
+			sscanf(resp, "%4d[^,]", &type);
+			set_switch_vars(type, i);
 		}
+		goto end;
 	}
 
-	printf("homeSwitchInput=%d, posLimitSwitchInput=%d, negLimitSwitchInput=%d\n", homeSwitchInput, posLimitSwitchInput, negLimitSwitchInput);
+	// Any Lexium from here on
+	pasynOctetSyncIO->setInputEos(pAsynUserIMS, "\0", 1);
+	sprintf(cmd, "PR IS");
+	resp[0] = 0;
+	status = this->writeReadController(cmd, resp, sizeof(resp), &nread, IMS_TIMEOUT);
+	printf("%s\n", resp);
+	pasynOctetSyncIO->setInputEos(pAsynUserIMS, "\n", 1);
+	// quick and dirty solution:
+	// kill all nondigit chars, break into separate strings on LF, scan 3 params
+	if (nread > 0) {
+		char *start = resp;
+		for (size_t i = 0; i < nread; i++)
+			if (!isdigit(resp[i])) {
+				if (resp[i] == '\n') {
+					int inputno, fn, act;
+					resp[i] = 0;
+					sscanf(start, "%d %d %d", &inputno, &fn, &act);
+					//printf("got %d %d %d\n", inputno, fn, act);
+					set_switch_vars(fn, inputno);
+					start = resp + i + 1;
+				}
+				else
+					resp[i] = ' ';
+			}
+	}
+
+end:
+	printf( "    HOME limit switch input line: %d\n", homeSwitchInput );
+	printf( "POSITIVE limit switch input line: %d\n", posLimitSwitchInput );
+	printf( "NEGATIVE limit switch input line: %d\n", negLimitSwitchInput );
+	printf( "-------------------------------------------\n" );
 
 	return status;
 }
@@ -219,7 +289,7 @@ asynStatus ImsMDrivePlusMotorController::writeInt32(asynUser *pasynUser, epicsIn
 	pAxis = this->getAxis(pasynUser);
 	if (!pAxis) return asynError;
 
-	asynPrint(pasynUserSelf, ASYN_TRACEIO_DRIVER, "%s:%s: function=%s, val=%d\n", DRIVER_NAME, functionName, value);
+	asynPrint(pasynUserSelf, ASYN_TRACEIO_DRIVER, "%s:%s: val=%d\n", DRIVER_NAME, functionName, value);
 
 	// Set the parameter and readback in the parameter library.  This may be overwritten when we read back the
 	// status at the end, but that's OK
@@ -318,9 +388,7 @@ asynStatus ImsMDrivePlusMotorController::writeReadController(const char *output,
 ////////////////////////////////////////////////////////
 extern "C" int ImsMDrivePlusCreateController(const char *motorPortName, const char *IOPortName, char *devName, double movingPollPeriod, double idlePollPeriod)
 {
-	ImsMDrivePlusMotorController *pImsController;
-	pImsController = new ImsMDrivePlusMotorController(motorPortName, IOPortName, devName, movingPollPeriod/1000., idlePollPeriod/1000.);
-	pImsController = NULL; 
+	new ImsMDrivePlusMotorController(motorPortName, IOPortName, devName, movingPollPeriod/1000., idlePollPeriod/1000.);
 	return(asynSuccess);
 }
 

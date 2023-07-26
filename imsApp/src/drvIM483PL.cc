@@ -130,7 +130,7 @@ struct driver_table IM483PL_access =
     IM483PL_axis
 };
 
-struct
+struct drvIM483PL
 {
     long number;
     long (*report) (int);
@@ -227,7 +227,7 @@ static int set_status(int card, int signal)
 {
     struct IM483controller *cntrl;
     struct mess_node *nodeptr;
-    register struct mess_info *motor_info;
+    struct mess_info *motor_info;
     /* Message parsing variables */
     char buff[BUFF_SIZE];
     int rtnval, rtn_state;
@@ -379,7 +379,7 @@ static RTN_STATUS send_mess(int card, const char *com, const char *name)
 {
     char local_buff[MAX_MSG_SIZE];
     struct IM483controller *cntrl;
-    int comsize, namesize;
+    size_t comsize, namesize;
     size_t nwrite;
 
     comsize = (com == NULL) ? 0 : strlen(com);
@@ -446,7 +446,7 @@ static int recv_mess(int card, char *com, int flag)
     }
 
     Debug(2, "recv_mess(): message = \"%s\"\n", com);
-    return(nread);
+    return((int)nread);
 }
 
 
@@ -548,8 +548,8 @@ static int motor_init()
 
         if (success_rtn == asynSuccess)
         {
-            pasynOctetSyncIO->setOutputEos(cntrl->pasynUser, output_terminator, strlen(output_terminator));
-            pasynOctetSyncIO->setInputEos(cntrl->pasynUser, input_terminator, strlen(input_terminator));
+            pasynOctetSyncIO->setOutputEos(cntrl->pasynUser, output_terminator, (int)strlen(output_terminator));
+            pasynOctetSyncIO->setInputEos(cntrl->pasynUser, input_terminator, (int)strlen(input_terminator));
             /* Send a message to the board, see if it exists */
             /* flush any junk at input port - should not be any data available */
             pasynOctetSyncIO->flush(cntrl->pasynUser);

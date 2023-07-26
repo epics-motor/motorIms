@@ -62,6 +62,7 @@ private:
 	asynStatus configAxis();
 	asynStatus setAxisMoveParameters(double min_velocity, double max_velocity, double acceleration);
 	void handleAxisError(char *errMsg);
+	bool homing;
 
 friend class ImsMDrivePlusMotorController;
 };
