@@ -22,7 +22,3 @@ asynSetTraceMask("IMS1",0,9)
 
 # Initialize the IOC and start processing records
 iocInit()
-
-
-
-
