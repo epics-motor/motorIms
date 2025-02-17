@@ -27,6 +27,7 @@
 #include <epicsThread.h>
 #include <iocsh.h>
 #include <asynOctetSyncIO.h>
+#include <asynOctet.h>
 
 #include "asynMotorController.h"
 #include "asynMotorAxis.h"
@@ -160,8 +161,10 @@ int ImsMDrivePlusMotorController::readHomeAndLimitConfig()
 	asynStatus status = asynError;
 	char cmd[MAX_CMD_LEN];
 	char resp[1024];
-	size_t nread;
-	int type;
+	size_t nread, nwrite;
+	int type, eomReason;
+	asynInterface *pasynInterface;
+	asynOctet *pasynOctet;
 
 	resp[0] = 0;
 	sprintf(cmd, "PR VR"); // get version
@@ -185,7 +188,16 @@ int ImsMDrivePlusMotorController::readHomeAndLimitConfig()
 		// LMD motor - different terminating characters
 		printf("Lexium MDrive detected\n");
 		printf("-------------------------------------------\n");
-		pasynOctetSyncIO->setOutputEos(pAsynUserIMS, "\r", 1);
+		if (this->deviceName[0]=='\0')
+		{
+			printf("Have no device name, line ending CR.\n");
+			pasynOctetSyncIO->setOutputEos(pAsynUserIMS, "\r", 1);
+		}
+		else
+		{
+			printf("Have device name going party modus, line ending LF.\n");
+			pasynOctetSyncIO->setOutputEos(pAsynUserIMS, "\n", 1);
+		}
 	}
 	else
 	{
@@ -204,13 +216,27 @@ int ImsMDrivePlusMotorController::readHomeAndLimitConfig()
 		goto end;
 	}
 
-	// Any Lexium from here on
-	pasynOctetSyncIO->setInputEos(pAsynUserIMS, "\0", 1);
-	sprintf(cmd, "PR IS");
+	// Any Lexium from here on: fetch home/limit switch configuration
+
+	// fetch unlocked base octet interface and do low level I/O with different EOS
+	// see <https://epics.anl.gov/tech-talk/2024/msg01188.php> for reason of this
+	pasynInterface = pasynManager->findInterface(pAsynUserIMS,asynOctetType,1);
+	pasynOctet = (asynOctet *)pasynInterface->pinterface;
+	pAsynUserIMS->timeout = IMS_TIMEOUT;
+
+	pasynManager->lockPort(pAsynUserIMS);
+	pasynOctet->setInputEos(pasynInterface->drvPvt, pAsynUserIMS, "\0", 1);
+	epicsSnprintf(cmd, sizeof(cmd), "%sPR IS", deviceName);
+	cmd[sizeof(cmd) - 1] = '\0';
 	resp[0] = 0;
-	status = this->writeReadController(cmd, resp, sizeof(resp), &nread, IMS_TIMEOUT);
+	nread = nwrite = 0;
+	status = pasynOctet->write(pasynInterface->drvPvt, pAsynUserIMS, cmd, strlen(cmd), &nwrite);
+	eomReason = 0;
+	status = pasynOctet->read(pasynInterface->drvPvt, pAsynUserIMS, resp, sizeof(resp), &nread, &eomReason);
+	pasynOctet->setInputEos(pasynInterface->drvPvt, pAsynUserIMS, "\n", 1);
+	pasynManager->unlockPort(pAsynUserIMS);
 	printf("%s\n", resp);
-	pasynOctetSyncIO->setInputEos(pAsynUserIMS, "\n", 1);
+
 	// quick and dirty solution:
 	// kill all nondigit chars, break into separate strings on LF, scan 3 params
 	if (nread > 0) {
