@@ -476,6 +476,13 @@ asynStatus ImsMDrivePlusMotorAxis::poll(bool *moving)
 	val = atoi(resp);
 	setDoubleParam(pController->motorEncoderPosition_, val);
 
+	// Read locked rotor status
+	sprintf(cmd, "PR LR");
+	status = pController->writeReadController(cmd, resp, sizeof(resp), &nread, IMS_TIMEOUT);
+	if (status) goto bail;
+	val = atoi(resp);
+	setIntegerParam(pController->ImsMDrivePlusLockedRotor_, val);
+
 	// error polling
 	bail:
 	if (status) {
@@ -521,6 +528,33 @@ asynStatus ImsMDrivePlusMotorAxis::saveToNVM()
 	if (status) {
 		char buff[LOCAL_LINE_LEN];
 		sprintf(buff, "%s:%s: ERROR saving to NVM", DRIVER_NAME, functionName);
+		handleAxisError(buff);
+	}
+
+	return status;
+}
+
+////////////////////////////////////////////////////////
+//! clearLockedRotor()
+//! Clear locked rotor fault and re-enables the output bridge
+//
+////////////////////////////////////////////////////////
+asynStatus ImsMDrivePlusMotorAxis::clearLockedRotor()
+{
+	asynStatus status = asynError;
+	char cmd[MAX_CMD_LEN];
+	static const char *functionName = "clearLockedRotor()";
+
+	// send CF command
+	sprintf(cmd, "CF");
+	status = pController->writeController(cmd, IMS_TIMEOUT);
+	if (status) goto bail;
+	asynPrint(pController->pasynUserSelf, ASYN_TRACEIO_DRIVER, "%s:%s: Clear Locked Rotor Error\n", DRIVER_NAME, functionName);
+
+	bail:
+	if (status) {
+		char buff[LOCAL_LINE_LEN];
+		sprintf(buff, "%s:%s: ERROR clearing LF error", DRIVER_NAME, functionName);
 		handleAxisError(buff);
 	}
 

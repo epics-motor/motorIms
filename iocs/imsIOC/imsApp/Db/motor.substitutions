@@ -1,0 +1,7 @@
+file "motor.template"
+{
+pattern
+{P	, M			, MOTOR	, DTYP		, PORT	, DESC		,  ADDR	, EGU	, DIR	, VELO	, VBAS	, VMAX	, DHLM	, DLLM	,  MRES		, PREC	, ALIAS		, INIT	}
+{"Test-CT"	, "{Slt:1-Ax:T}Mtr"	, "M1"	, asynMotor	, P1	, "Test"	,  0	, Rev	, Pos	, 1	, 0.2	, 2	, 15	, -15	,  1.953125e-5	, 5	, "test_ax"	, ""	}
+}
+
