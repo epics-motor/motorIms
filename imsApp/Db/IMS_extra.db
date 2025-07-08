@@ -1,7 +1,7 @@
 # Database for IMS 
 
-# send IMS S command to save parameters to NVM
-record(bo,"$(DEV):$(AREA):$(LOC):IMS_S") {
+# Send IMS S command to save parameters to NVM
+record(bo,"$(P)$(R)Sav-Cmd") {
     field(DESC, "Ims Save to NVM")
     field(PINI, "NO")
     field(DTYP, "asynInt32")
@@ -10,4 +10,23 @@ record(bo,"$(DEV):$(AREA):$(LOC):IMS_S") {
     field(ZNAM, "No")
     field(ONAM, "Yes")
 }
+
+# Send CF command to clear locked rotor error
+record(bo,"$(P)$(R)ClrLR-Cmd") {
+    field(DESC, "Clear LR Error")
+    field(DTYP, "asynInt32")
+    field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))IMS_CLEARLRERROR")
+}
+
+# Send LR command to check locked rotor status
+record(bi,"$(P)$(R)LockRotor-Sts") {
+    field(DESC, "Locked Rotor Sts")
+    field(DTYP, "asynInt32")
+    field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))IMS_LOCKEDROTOR")
+    field(SCAN, "I/O Intr")
+    field(ZNAM, "Clear")
+    field(ONAM, "Locked")
+    field(OSV,  "MINOR")
+}
+
 

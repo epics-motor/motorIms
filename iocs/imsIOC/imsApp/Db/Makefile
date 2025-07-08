@@ -11,6 +11,7 @@ include $(TOP)/configure/CONFIG
 # Create and install (or just install) into <top>/db
 # databases, templates, substitutions like this
 #DB += xxx.db
+DB_INSTALLS += $(ASYN)/db/asynRecord.db
 
 ifdef MOTOR_IMS
 DB_INSTALLS += $(MOTOR_IMS)/db/IMS_extra.db
