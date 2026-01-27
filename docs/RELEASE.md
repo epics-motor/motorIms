@@ -1,5 +1,23 @@
 # motorIms Releases
 
+## __R1-1 (2026-01-27)__
+R1-1 is a release based on the master branch.
+
+### Changes since R1-0-2
+
+#### New features
+* Pull request [#4](https://github.com/epics-motor/motorIms/pull/4): [Huijuan-Xu](https://github.com/Huijuan-Xu) added support for querying and clearing locked rotor faults
+
+#### Modifications to existing features
+* None
+
+#### Bug fixes
+* Pull request [#3](https://github.com/epics-motor/motorIms/pull/3): Many bug fixes and improvements from [Dirk Zimoch](https://github.com/dirk-zimoch) at PSI
+* Pull request [#5](https://github.com/epics-motor/motorIms/pull/5): Party-line communication improvements from [Lutz Rossa](https://github.com/lrossa), based on a [tech-talk thread](https://epics.anl.gov/tech-talk/2024/msg01188.php) between [Mark Rivers](https://github.com/MarkRivers) and Sebastian Eckert from HZB
+
+#### Continuous integration
+* Upgraded ci-scripts (v3.4.1)
+
 ## __R1-0-2 (2023-04-11)__
 R1-0-2 is a release based on the master branch.
 
