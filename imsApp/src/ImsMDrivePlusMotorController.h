@@ -31,7 +31,6 @@ public:
 	asynStatus writeReadController(const char *output, char *input, size_t maxChars, size_t *nread, double timeout);
 	asynStatus writeController(const char *output, double timeout);
 
-	
 
 protected:
 	 ImsMDrivePlusMotorAxis **pAxes_;       // Array of pointers to axis objects
@@ -43,6 +42,8 @@ protected:
 	//! extra parameters that the ImsMDrivePlus controller supports
 	int ImsMDrivePlusLoadMCode_;    //! Load MCode string, NOT SUPPORTED YET
 	int ImsMDrivePlusClearMCode_;   //! Clear program buffer, NOT SUPPORTED YET
+	int ImsMDrivePlusLockedRotor_;	//! Locked rotor status flag
+	int ImsMDrivePlusClearLRError_;	//! Clear a locked rotor fault and re-enables the output bridge
 	int ImsMDrivePlusSaveToNVM_;    //! Store current user variables and flags to nonvolatile ram
 #define FIRST_IMS_PARAM ImsMDrivePlusLoadMCode_
 #define LAST_IMS_PARAM ImsMDrivePlusSaveToNVM_
@@ -54,6 +55,8 @@ private:
 // drvInfo strings for extra parameters that the ImsMDrivePlus controller supports
 #define ImsMDrivePlusLoadMCodeControlString	"IMS_LOADMCODE"    // NOT SUPPORTED YET
 #define ImsMDrivePlusClearMCodeControlString	"IMS_CLEARMCODE"   // NOT SUPPORTED YET
+#define ImsMDrivePlusLockedRotorString		"IMS_LOCKEDROTOR"
+#define ImsMDrivePlusClearLRErrorString		"IMS_CLEARLRERROR"
 #define ImsMDrivePlusSaveToNVMControlString	"IMS_SAVETONVM"
 
 	asynUser *pAsynUserIMS;

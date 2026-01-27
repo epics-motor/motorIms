@@ -14,8 +14,9 @@ cd "${TOP}/iocBoot/${IOC}"
 dbLoadRecords("$(MOTOR)/db/motorUtil.db", "P=ims:")
 
 ##
-< IM483.cmd
-< MDrive.cmd
+#< IM483.cmd
+#< MDrive.cmd
+<MDrive-Eth.cmd
 
 iocInit
 

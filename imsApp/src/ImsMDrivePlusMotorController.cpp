@@ -85,6 +85,8 @@ ImsMDrivePlusMotorController::ImsMDrivePlusMotorController(const char *motorPort
 	createParam(ImsMDrivePlusSaveToNVMControlString, asynParamInt32, &ImsMDrivePlusSaveToNVM_);
 	createParam(ImsMDrivePlusLoadMCodeControlString, asynParamOctet, &this->ImsMDrivePlusLoadMCode_);
 	createParam(ImsMDrivePlusClearMCodeControlString, asynParamOctet, &this->ImsMDrivePlusClearMCode_);
+	createParam(ImsMDrivePlusLockedRotorString, asynParamInt32, &ImsMDrivePlusLockedRotor_);
+	createParam(ImsMDrivePlusClearLRErrorString, asynParamInt32, &ImsMDrivePlusClearLRError_);
 
 	// Check the validity of the arguments and init controller object
 	initController(devName, movingPollPeriod, idlePollPeriod);
@@ -328,6 +330,15 @@ asynStatus ImsMDrivePlusMotorController::writeInt32(asynUser *pasynUser, epicsIn
 			else asynPrint(pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Successfully saved to NVM\n", DRIVER_NAME, functionName);
 		} else {
 			asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: ERROR, value of 1 to save to NVM\n", DRIVER_NAME, functionName);
+		}
+	}
+	else if (reason == ImsMDrivePlusClearLRError_) {
+		if (value == 1) { // clear locked rotor error
+			status = pAxis->clearLockedRotor();
+			if (status) asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: ERROR clearing LR error\n", DRIVER_NAME, functionName);
+			else asynPrint(pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Successfully cleared LR error\n", DRIVER_NAME, functionName);
+		} else {
+			asynPrint(pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: ERROR, value of 1 to clear LR error\n", DRIVER_NAME, functionName);
 		}
 	} else { // call base class method to continue handling
 			status = asynMotorController::writeInt32(pasynUser, value);

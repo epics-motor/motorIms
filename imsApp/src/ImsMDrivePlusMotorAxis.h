@@ -44,6 +44,7 @@ public:
 	// IMS MDrivePlus specific functions
 	////////////////////////////////////////////////////
   	asynStatus saveToNVM();
+  	asynStatus clearLockedRotor();
 protected:
 
 
